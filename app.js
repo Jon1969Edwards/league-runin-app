@@ -176,6 +176,32 @@ function rankTeams(teams, pointsByTeam) {
   });
 }
 
+function collectPositionBoundsFromPoints(teams, pointsByTeam) {
+  const byPoints = new Map();
+  for (const team of teams) {
+    const points = pointsByTeam[team.name];
+    const group = byPoints.get(points);
+    if (group) {
+      group.push(team.name);
+    } else {
+      byPoints.set(points, [team.name]);
+    }
+  }
+
+  const sortedPointTotals = [...byPoints.keys()].sort((a, b) => b - a);
+  const bounds = {};
+  let startPos = 1;
+  for (const points of sortedPointTotals) {
+    const names = byPoints.get(points);
+    const endPos = startPos + names.length - 1;
+    for (const name of names) {
+      bounds[name] = { best: startPos, worst: endPos };
+    }
+    startPos = endPos + 1;
+  }
+  return bounds;
+}
+
 function calculateExactFixtureAware(teams, fixtures) {
   if (fixtures.length > MAX_EXACT_FIXTURES) {
     throw new Error(
@@ -203,12 +229,12 @@ function calculateExactFixtureAware(teams, fixtures) {
   function dfs(matchIndex) {
     if (matchIndex === fixtures.length) {
       scenarioCount += 1;
-      const ranking = rankTeams(teams, pointsByTeam);
-      ranking.forEach((team, idx) => {
-        const pos = idx + 1;
-        if (pos < best[team.name]) best[team.name] = pos;
-        if (pos > worst[team.name]) worst[team.name] = pos;
-      });
+      const bounds = collectPositionBoundsFromPoints(teams, pointsByTeam);
+      for (const team of teams) {
+        const teamBounds = bounds[team.name];
+        if (teamBounds.best < best[team.name]) best[team.name] = teamBounds.best;
+        if (teamBounds.worst > worst[team.name]) worst[team.name] = teamBounds.worst;
+      }
       return;
     }
 
@@ -296,12 +322,12 @@ function calculateMonteCarloFixtureAware(teams, fixtures, simulationCount) {
       }
     }
 
-    const ranking = rankTeams(teams, pointsByTeam);
-    ranking.forEach((team, idx) => {
-      const pos = idx + 1;
-      if (pos < best[team.name]) best[team.name] = pos;
-      if (pos > worst[team.name]) worst[team.name] = pos;
-    });
+    const bounds = collectPositionBoundsFromPoints(teams, pointsByTeam);
+    for (const team of teams) {
+      const teamBounds = bounds[team.name];
+      if (teamBounds.best < best[team.name]) best[team.name] = teamBounds.best;
+      if (teamBounds.worst > worst[team.name]) worst[team.name] = teamBounds.worst;
+    }
   }
 
   const rows = teams
