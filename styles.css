@@ -85,6 +85,16 @@ input[type="number"] {
   padding: 10px;
 }
 
+input[type="password"] {
+  width: 100%;
+  max-width: 460px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 10px;
+}
+
 button {
   border: 0;
   border-radius: 8px;
@@ -97,6 +107,11 @@ button {
 
 button.secondary {
   background: #334155;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .table-wrap {

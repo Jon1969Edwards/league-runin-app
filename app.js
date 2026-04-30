@@ -2,6 +2,9 @@ const standingsInput = document.getElementById("standingsInput");
 const fixturesInput = document.getElementById("fixturesInput");
 const modeSelect = document.getElementById("modeSelect");
 const simulationsInput = document.getElementById("simulationsInput");
+const apiTokenInput = document.getElementById("apiTokenInput");
+const seasonInput = document.getElementById("seasonInput");
+const fetchLiveBtn = document.getElementById("fetchLiveBtn");
 const calculateBtn = document.getElementById("calculateBtn");
 const loadExampleBtn = document.getElementById("loadExampleBtn");
 const resultsBody = document.querySelector("#resultsTable tbody");
@@ -10,6 +13,9 @@ const errorBox = document.getElementById("errorBox");
 const infoBox = document.getElementById("infoBox");
 const MAX_EXACT_FIXTURES = 14;
 const DEFAULT_MONTE_CARLO_SIMULATIONS = 20000;
+const API_BASE_URL = "https://api.football-data.org/v4";
+const PREMIER_LEAGUE_CODE = "PL";
+const API_TOKEN_STORAGE_KEY = "footballDataApiToken";
 
 const EXAMPLE_STANDINGS = `Arsenal,67,30,62
 Manchester City,64,25,68
@@ -63,6 +69,122 @@ West Ham,Leicester
 Wolves,Leicester
 Ipswich,Leicester
 Southampton,Leicester`;
+
+function getDefaultSeasonStartYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  return month >= 6 ? year : year - 1;
+}
+
+function normalizeApiTeamName(team) {
+  if (!team) return "";
+  return team.shortName || team.name || "";
+}
+
+function standingsToCsv(standingsTable) {
+  if (!Array.isArray(standingsTable) || standingsTable.length === 0) {
+    throw new Error("Live data returned no standings rows.");
+  }
+  return standingsTable
+    .map((row) => {
+      const teamName = normalizeApiTeamName(row.team);
+      const goalDifference = Number(row.goalDifference);
+      const goalsFor = Number(row.goalsFor);
+      const points = Number(row.points);
+      if (!teamName || !Number.isFinite(points) || !Number.isFinite(goalDifference) || !Number.isFinite(goalsFor)) {
+        throw new Error("Live standings payload is missing required fields.");
+      }
+      return `${teamName},${points},${goalDifference},${goalsFor}`;
+    })
+    .join("\n");
+}
+
+function fixturesToCsv(matches, teamNameById) {
+  if (!Array.isArray(matches)) {
+    throw new Error("Live fixtures payload is invalid.");
+  }
+
+  const lines = [];
+  for (const match of matches) {
+    const homeId = match?.homeTeam?.id;
+    const awayId = match?.awayTeam?.id;
+    const home = teamNameById.get(homeId);
+    const away = teamNameById.get(awayId);
+    if (!home || !away || home === away) continue;
+    lines.push(`${home},${away}`);
+  }
+  return lines.join("\n");
+}
+
+async function fetchJson(url, apiToken) {
+  const response = await fetch(url, {
+    headers: {
+      "X-Auth-Token": apiToken
+    }
+  });
+
+  if (!response.ok) {
+    let details = "";
+    try {
+      const payload = await response.json();
+      if (payload && payload.message) details = ` ${payload.message}`;
+    } catch {
+      // Ignore non-JSON error response.
+    }
+    throw new Error(`API request failed (${response.status}).${details}`);
+  }
+
+  return response.json();
+}
+
+async function fetchPremierLeagueData() {
+  clearError();
+  clearInfo();
+
+  const apiToken = apiTokenInput.value.trim();
+  const season = Number(seasonInput.value);
+  if (!apiToken) {
+    throw new Error("Please enter your football-data.org API token first.");
+  }
+  if (!Number.isInteger(season) || season < 2000 || season > 2100) {
+    throw new Error("Season must be a year between 2000 and 2100.");
+  }
+
+  localStorage.setItem(API_TOKEN_STORAGE_KEY, apiToken);
+  fetchLiveBtn.disabled = true;
+  const originalLabel = fetchLiveBtn.textContent;
+  fetchLiveBtn.textContent = "Fetching...";
+
+  try {
+    const standingsUrl = `${API_BASE_URL}/competitions/${PREMIER_LEAGUE_CODE}/standings?season=${season}`;
+    const matchesUrl = `${API_BASE_URL}/competitions/${PREMIER_LEAGUE_CODE}/matches?season=${season}&status=SCHEDULED`;
+
+    const standingsPayload = await fetchJson(standingsUrl, apiToken);
+    const matchesPayload = await fetchJson(matchesUrl, apiToken);
+
+    const totalStandings = standingsPayload?.standings?.find((entry) => entry.type === "TOTAL");
+    if (!totalStandings || !Array.isArray(totalStandings.table)) {
+      throw new Error("Could not find TOTAL standings in API response.");
+    }
+
+    const teamNameById = new Map(
+      totalStandings.table.map((row) => [row.team.id, normalizeApiTeamName(row.team)])
+    );
+
+    standingsInput.value = standingsToCsv(totalStandings.table);
+    fixturesInput.value = fixturesToCsv(matchesPayload?.matches || [], teamNameById);
+
+    runCalculation();
+    showInfo(
+      `Loaded live EPL data for ${season}/${String(season + 1).slice(-2)}. ` +
+        `Fixtures imported: ${(matchesPayload?.matches || []).length}.`
+    );
+  } finally {
+    fetchLiveBtn.disabled = false;
+    fetchLiveBtn.textContent = originalLabel;
+  }
+}
 
 function parseCsv(text, expectedColumns, label) {
   const lines = text
@@ -487,7 +609,23 @@ function loadExample() {
   runCalculation();
 }
 
+function initializeLiveDataControls() {
+  const savedToken = localStorage.getItem(API_TOKEN_STORAGE_KEY);
+  if (savedToken) {
+    apiTokenInput.value = savedToken;
+  }
+  seasonInput.value = String(getDefaultSeasonStartYear());
+}
+
 calculateBtn.addEventListener("click", runCalculation);
 loadExampleBtn.addEventListener("click", loadExample);
+fetchLiveBtn.addEventListener("click", async () => {
+  try {
+    await fetchPremierLeagueData();
+  } catch (error) {
+    showError(error.message || "Failed to fetch live data.");
+  }
+});
 
+initializeLiveDataControls();
 loadExample();

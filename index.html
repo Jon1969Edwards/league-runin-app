@@ -26,6 +26,14 @@
     </section>
 
     <div class="controls panel">
+      <h2>Live Data (football-data.org)</h2>
+      <label for="apiTokenInput">API token</label>
+      <input id="apiTokenInput" type="password" placeholder="Paste football-data.org token">
+      <label for="seasonInput">Season start year (e.g. 2025 for 2025/26)</label>
+      <input id="seasonInput" type="number" min="2000" max="2100" step="1">
+      <p class="hint">
+        Token is stored locally in your browser only and sent to football-data.org as <code>X-Auth-Token</code>.
+      </p>
       <label for="modeSelect">Calculation mode</label>
       <select id="modeSelect">
         <option value="range">Fast range (points bounds)</option>
@@ -46,6 +54,7 @@
     </div>
 
     <div class="actions">
+      <button id="fetchLiveBtn">Fetch Latest EPL Data</button>
       <button id="calculateBtn">Calculate</button>
       <button id="loadExampleBtn" class="secondary">Load EPL Example</button>
     </div>
