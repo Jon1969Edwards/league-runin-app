@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Run-In Position Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Run-In Position Calculator</h1>
+    <p class="intro">
+      Enter standings and remaining fixtures, then calculate each team's current position and mathematically possible range.
+    </p>
+
+    <section class="panel">
+      <h2>Standings CSV</h2>
+      <p class="hint">Format: <code>team,points,goalDifference,goalsFor</code></p>
+      <textarea id="standingsInput" spellcheck="false"></textarea>
+    </section>
+
+    <section class="panel">
+      <h2>Remaining Fixtures CSV</h2>
+      <p class="hint">Format: <code>homeTeam,awayTeam</code> (one match per line)</p>
+      <textarea id="fixturesInput" spellcheck="false"></textarea>
+    </section>
+
+    <div class="controls panel">
+      <label for="modeSelect">Calculation mode</label>
+      <select id="modeSelect">
+        <option value="range">Fast range (points bounds)</option>
+        <option value="exact">Fixture-aware exact (enumerates outcomes)</option>
+        <option value="montecarlo">Fixture-aware Monte Carlo (large fixture sets)</option>
+      </select>
+      <label for="simulationsInput">Monte Carlo simulations</label>
+      <input id="simulationsInput" type="number" min="100" max="200000" step="100" value="20000">
+      <p class="hint">
+        Exact mode evaluates all win/draw/loss combinations, so it is limited to smaller fixture sets.
+      </p>
+      <p class="hint">
+        Monte Carlo mode samples random outcomes for all fixtures and estimates each team's best/worst finish.
+      </p>
+    </div>
+
+    <div class="actions">
+      <button id="calculateBtn">Calculate</button>
+      <button id="loadExampleBtn" class="secondary">Load EPL Example</button>
+    </div>
+
+    <section class="panel">
+      <h2>Results</h2>
+      <div id="errorBox" class="error hidden"></div>
+      <div id="infoBox" class="info hidden"></div>
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Current</th>
+              <th>Points</th>
+              <th>Matches Left</th>
+              <th>Max Points</th>
+              <th>Highest Possible</th>
+              <th>Lowest Possible</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Position Grid (Image-style)</h2>
+      <p class="hint">
+        Legend: highlighted band = possible finishing range, white = current position, outlined = lowest possible.
+      </p>
+      <div id="positionGrid" class="position-grid"></div>
+    </section>
+
+    <section class="panel small">
+      <h2>How this MVP calculates ranges</h2>
+      <p>
+        Highest possible place assumes a team reaches max points and counts teams that are already guaranteed above that total.
+      </p>
+      <p>
+        Lowest possible place assumes a team stays on current points and counts teams that can still overtake that total.
+      </p>
+      <p class="hint">
+        This is a fast "mathematical possibility" model based on points ranges. It does not fully simulate all fixture interactions.
+      </p>
+      <p class="hint">
+        Exact mode is fixture-aware and outcome-complete for smaller fixture lists.
+      </p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
