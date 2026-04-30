@@ -44,7 +44,7 @@ Newcastle United,Bournemouth
 Newcastle United,Everton
 Tottenham,Newcastle United
 Chelsea,Brighton
-Chelsea,Liverpool
+Chelsea,Leicester
 Aston Villa,Chelsea
 Brighton,Fulham
 Brighton,West Ham
@@ -113,8 +113,11 @@ function parseFixtures(text, knownTeams) {
     if (home.toLowerCase() === away.toLowerCase()) {
       throw new Error(`Fixtures: line ${idx + 1} has same home and away team.`);
     }
-    if (!names.has(home.toLowerCase()) || !names.has(away.toLowerCase())) {
-      throw new Error(`Fixtures: line ${idx + 1} contains a team not in standings.`);
+    const missingTeams = [home, away].filter((teamName) => !names.has(teamName.toLowerCase()));
+    if (missingTeams.length > 0) {
+      throw new Error(
+        `Fixtures: line ${idx + 1} contains team(s) not in standings: ${missingTeams.join(", ")}.`
+      );
     }
     return { home, away };
   });
