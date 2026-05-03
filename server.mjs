@@ -11,7 +11,14 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
-const PORT = Number(process.env.PORT || 58888);
+const envPortRaw = process.env.PORT;
+const explicitPort =
+  envPortRaw !== undefined && envPortRaw !== null && String(envPortRaw).trim() !== "";
+const preferredPort = explicitPort ? Number(envPortRaw) : 58888;
+if (explicitPort && !Number.isFinite(preferredPort)) {
+  console.error(`Invalid PORT: ${envPortRaw}`);
+  process.exit(1);
+}
 const PROXY_PREFIX = "/api-football";
 
 const MIME = {
@@ -128,7 +135,38 @@ const server = http.createServer((req, res) => {
   serveStatic(req, res, url);
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`Run-in app: http://127.0.0.1:${PORT}/`);
-  console.log(`           http://localhost:${PORT}/`);
+function logListening() {
+  const addr = server.address();
+  const port = typeof addr === "object" && addr ? addr.port : preferredPort;
+  console.log(`Run-in app: http://127.0.0.1:${port}/`);
+  console.log(`           http://localhost:${port}/`);
+}
+
+function onBindError(err) {
+  if (err.code === "EADDRINUSE") {
+    if (explicitPort) {
+      console.error(
+        `Port ${preferredPort} is already in use. Stop the other process (or close that terminal), or run with a free port, e.g. set PORT=58889`
+      );
+      process.exit(1);
+    }
+    console.warn(`Port ${preferredPort} is already in use; starting on an available port instead.`);
+    server.close(() => {
+      server.once("error", (e2) => {
+        console.error(e2);
+        process.exit(1);
+      });
+      server.listen(0, "127.0.0.1");
+    });
+    return;
+  }
+  console.error(err);
+  process.exit(1);
+}
+
+server.once("error", onBindError);
+server.once("listening", () => {
+  server.off("error", onBindError);
+  logListening();
 });
+server.listen(preferredPort, "127.0.0.1");
