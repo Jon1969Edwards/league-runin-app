@@ -2,6 +2,6 @@
   "name": "league-runin-app",
   "private": true,
   "scripts": {
-    "start": "npx --yes serve . -l 5173"
+    "start": "npx --yes serve . -l 58888"
   }
 }

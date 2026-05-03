@@ -626,13 +626,18 @@ fetchLiveBtn.addEventListener("click", async () => {
     const base = error.message || "Failed to fetch live data.";
     const isFileOrigin = window.location.protocol === "file:";
     const looksLikeBlockedFetch =
-      error.name === "TypeError" || /networkerror|failed to fetch/i.test(String(base));
+      error.name === "TypeError" ||
+      error.name === "NetworkError" ||
+      /networkerror|failed to fetch/i.test(String(base));
     let suffix;
     if (base.includes("token")) {
       suffix = " Use the API token field under Live Data above.";
     } else if (isFileOrigin && looksLikeBlockedFetch) {
       suffix =
-        " Pages opened as file:// cannot call the API in most browsers. Run npm start in the project folder and open the localhost URL instead.";
+        " Pages opened as file:// cannot call the API in most browsers. Run npm start in the project folder and open the Local address from that terminal (not a file path).";
+    } else if (looksLikeBlockedFetch && !isFileOrigin) {
+      suffix =
+        " Confirm the address bar shows the http://localhost URL from the terminal where npm start is running (not file:// or a different port). Try another browser, disable strict tracking/ad-block extensions for this site, and check you are online.";
     } else {
       suffix = " Text areas and the table below were not updated.";
     }
