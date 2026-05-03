@@ -623,7 +623,11 @@ fetchLiveBtn.addEventListener("click", async () => {
   try {
     await fetchPremierLeagueData();
   } catch (error) {
-    showError(error.message || "Failed to fetch live data.");
+    const base = error.message || "Failed to fetch live data.";
+    const suffix = base.includes("token")
+      ? " Use the API token field under Live Data above."
+      : " Text areas and the table below were not updated.";
+    showError(base + suffix);
   }
 });
 
