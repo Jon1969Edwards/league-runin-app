@@ -3,80 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Run-In Position Calculator</title>
+  <title>EPL run-in calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2310b981'/%3E%3Cpath fill='%230f172a' d='M8 16c0-4 3.5-8 8-8s8 4 8 8-3.5 8-8 8-8-4-8-8zm8-5a5 5 0 100 10 5 5 0 000-10z'/%3E%3C/svg%3E" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="container">
-    <h1>Run-In Position Calculator</h1>
-    <p class="intro">
-      Enter standings and remaining fixtures, then calculate each team's current position and mathematically possible range.
-    </p>
+  <main class="layout">
+    <header class="hero">
+      <h1>EPL run-in calculator</h1>
+      <p class="hero__lede">See each club’s current rank and best–worst possible finish from points and fixtures.</p>
+    </header>
 
-    <section class="panel">
-      <h2>Standings CSV</h2>
-      <p class="hint">Format: <code>team,points,goalDifference,goalsFor</code></p>
-      <textarea id="standingsInput" spellcheck="false"></textarea>
+    <section class="card card--accent" aria-labelledby="load-heading">
+      <div class="card__head">
+        <h2 id="load-heading" class="card__title">Load data</h2>
+        <p class="card__subtitle">football-data.org · Premier League</p>
+      </div>
+      <div class="form-grid form-grid--load">
+        <div class="field">
+          <label for="apiTokenInput">API token</label>
+          <input id="apiTokenInput" type="password" autocomplete="off" placeholder="Paste token from football-data.org">
+        </div>
+        <div class="field field--narrow">
+          <label for="seasonInput">Season start</label>
+          <input id="seasonInput" type="number" min="2000" max="2100" step="1" title="First year of season, e.g. 2025 for 2025/26">
+        </div>
+        <div class="field field--actions">
+          <span class="field__spacer" aria-hidden="true"></span>
+          <button type="button" id="fetchLiveBtn" class="btn btn--primary">Fetch EPL</button>
+        </div>
+      </div>
+      <details class="disclosure disclosure--tight">
+        <summary>Local setup (npm)</summary>
+        <p>Use <code>npm start</code> and open the printed URL. The dev server includes a small proxy so the API works on localhost with a port number.</p>
+      </details>
     </section>
 
-    <section class="panel">
-      <h2>Remaining Fixtures CSV</h2>
-      <p class="hint">Format: <code>homeTeam,awayTeam</code> (one match per line)</p>
-      <textarea id="fixturesInput" spellcheck="false"></textarea>
+    <section class="card" aria-labelledby="calc-heading">
+      <div class="card__head">
+        <h2 id="calc-heading" class="card__title">How to calculate</h2>
+      </div>
+      <div class="form-grid form-grid--calc">
+        <div class="field">
+          <label for="modeSelect">Mode</label>
+          <select id="modeSelect">
+            <option value="range">Fast range (point limits)</option>
+            <option value="exact">Exact (all outcomes, small fixture lists)</option>
+            <option value="montecarlo">Monte Carlo (many fixtures)</option>
+          </select>
+        </div>
+        <div class="field field--narrow" id="monteCarloRow">
+          <label for="simulationsInput">Simulations</label>
+          <input id="simulationsInput" type="number" min="100" max="200000" step="100" value="20000">
+        </div>
+      </div>
+      <div class="toolbar">
+        <button type="button" id="calculateBtn" class="btn btn--primary">Calculate</button>
+        <button type="button" id="loadExampleBtn" class="btn btn--ghost">Try example data</button>
+      </div>
+      <details class="disclosure">
+        <summary>What each mode does</summary>
+        <ul class="disclosure-list">
+          <li><strong>Fast range</strong> — quickest; uses min/max points only (not every fixture combination).</li>
+          <li><strong>Exact</strong> — every win/draw/loss path; capped at 14 fixtures. Ties on points show as a rank band.</li>
+          <li><strong>Monte Carlo</strong> — random samples for large fixture lists; tune simulation count.</li>
+        </ul>
+      </details>
     </section>
 
-    <div class="controls panel">
-      <h2>Live Data (football-data.org)</h2>
-      <label for="apiTokenInput">API token</label>
-      <input id="apiTokenInput" type="password" placeholder="Paste football-data.org token">
-      <label for="seasonInput">Season start year (e.g. 2025 for 2025/26)</label>
-      <input id="seasonInput" type="number" min="2000" max="2100" step="1">
-      <p class="hint">
-        Token is stored locally in your browser only and sent to football-data.org as <code>X-Auth-Token</code>.
-      </p>
-      <p class="hint">
-        Live fetch needs this page served over HTTP (not <code>file://</code>). Run <code>npm start</code> in the project folder and open the URL it prints; it includes a small proxy so the API works on ports like 58888 (football-data.org CORS only allows <code>http://localhost</code> without a port).
-      </p>
-      <label for="modeSelect">Calculation mode</label>
-      <select id="modeSelect">
-        <option value="range">Fast range (points bounds)</option>
-        <option value="exact">Fixture-aware exact (enumerates outcomes)</option>
-        <option value="montecarlo">Fixture-aware Monte Carlo (large fixture sets)</option>
-      </select>
-      <label for="simulationsInput">Monte Carlo simulations</label>
-      <input id="simulationsInput" type="number" min="100" max="200000" step="100" value="20000">
-      <p class="hint">
-        Exact mode evaluates all win/draw/loss combinations, so it is limited to smaller fixture sets.
-      </p>
-      <p class="hint">
-        Monte Carlo mode samples random outcomes for all fixtures and estimates each team's best/worst finish.
-      </p>
-      <p class="hint">
-        In fixture-aware modes, teams level on points are treated as tie ranges (unknown tiebreak), rather than fixed by current goal difference.
-      </p>
-    </div>
+    <details class="card card--data" id="dataPanel">
+      <summary class="card-summary">
+        <span class="card-summary__title">Standings &amp; fixtures</span>
+        <span class="card-summary__hint">CSV · edit or paste manually</span>
+      </summary>
+      <div class="data-split">
+        <div class="field">
+          <label for="standingsInput">Standings</label>
+          <p class="field-hint"><code>team,points,goalDiff,goalsFor</code></p>
+          <textarea id="standingsInput" spellcheck="false" rows="8"></textarea>
+        </div>
+        <div class="field">
+          <label for="fixturesInput">Remaining fixtures</label>
+          <p class="field-hint"><code>home,away</code> per line</p>
+          <textarea id="fixturesInput" spellcheck="false" rows="8"></textarea>
+        </div>
+      </div>
+    </details>
 
-    <div class="actions">
-      <button id="fetchLiveBtn">Fetch Latest EPL Data</button>
-      <button id="calculateBtn">Calculate</button>
-      <button id="loadExampleBtn" class="secondary">Load EPL Example</button>
-    </div>
-
-    <section class="panel">
-      <h2>Results</h2>
-      <div id="errorBox" class="error hidden"></div>
-      <div id="infoBox" class="info hidden"></div>
-      <div class="table-wrap">
+    <section class="card card--results" aria-labelledby="results-heading">
+      <div class="card__head card__head--row">
+        <h2 id="results-heading" class="card__title">Results</h2>
+      </div>
+      <div id="errorBox" class="banner banner--error hidden" role="alert"></div>
+      <div id="infoBox" class="banner banner--info hidden" role="status"></div>
+      <div class="table-shell">
         <table id="resultsTable">
           <thead>
             <tr>
               <th>Team</th>
-              <th>Current</th>
-              <th>Points</th>
-              <th>Matches Left</th>
-              <th>Max Points</th>
-              <th>Highest Possible</th>
-              <th>Lowest Possible</th>
+              <th>Now</th>
+              <th>Pts</th>
+              <th>Left</th>
+              <th>Max</th>
+              <th>Best</th>
+              <th>Worst</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -84,29 +117,18 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h2>Position Grid (Image-style)</h2>
-      <p class="hint">
-        Legend: highlighted band = possible finishing range, white = current position, outlined = lowest possible.
-      </p>
+    <section class="card" aria-labelledby="grid-heading">
+      <div class="card__head">
+        <h2 id="grid-heading" class="card__title">Finish range grid</h2>
+        <p class="card__subtitle">Band = possible positions · bright cell = current · ring = worst case</p>
+      </div>
       <div id="positionGrid" class="position-grid"></div>
     </section>
 
-    <section class="panel small">
-      <h2>How this MVP calculates ranges</h2>
-      <p>
-        Highest possible place assumes a team reaches max points and counts teams that are already guaranteed above that total.
-      </p>
-      <p>
-        Lowest possible place assumes a team stays on current points and counts teams that can still overtake that total.
-      </p>
-      <p class="hint">
-        This is a fast "mathematical possibility" model based on points ranges. It does not fully simulate all fixture interactions.
-      </p>
-      <p class="hint">
-        Exact mode is fixture-aware and outcome-complete for smaller fixture lists.
-      </p>
-    </section>
+    <details class="disclosure disclosure--footer">
+      <summary>Methodology (fast range mode)</summary>
+      <p>Best rank assumes a team hits its max points and counts sides already guaranteed above that. Worst rank assumes it stays on current points and counts who can still pass it. Fixture-aware modes use tie bands when level on points.</p>
+    </details>
   </main>
 
   <script src="app.js"></script>

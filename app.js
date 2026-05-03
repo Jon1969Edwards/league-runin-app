@@ -11,6 +11,7 @@ const resultsBody = document.querySelector("#resultsTable tbody");
 const positionGrid = document.getElementById("positionGrid");
 const errorBox = document.getElementById("errorBox");
 const infoBox = document.getElementById("infoBox");
+const monteCarloRow = document.getElementById("monteCarloRow");
 const MAX_EXACT_FIXTURES = 14;
 const DEFAULT_MONTE_CARLO_SIMULATIONS = 20000;
 const REMOTE_FOOTBALL_DATA_API = "https://api.football-data.org/v4";
@@ -190,8 +191,7 @@ async function fetchPremierLeagueData() {
 
     runCalculation();
     showInfo(
-      `Loaded live EPL data for ${season}/${String(season + 1).slice(-2)}. ` +
-        `Fixtures imported: ${(matchesPayload?.matches || []).length}.`
+      `EPL ${season}/${String(season + 1).slice(-2)} · ${(matchesPayload?.matches || []).length} scheduled fixtures pulled in.`
     );
   } finally {
     fetchLiveBtn.disabled = false;
@@ -591,7 +591,7 @@ function runCalculation() {
       const result = calculateExactFixtureAware(teams, fixtures);
       renderRows(result.rows);
       renderPositionGrid(result.rows);
-      showInfo(`Exact mode evaluated ${result.scenarioCount.toLocaleString()} outcome scenarios.`);
+      showInfo(`Exact mode · ${result.scenarioCount.toLocaleString()} scenarios.`);
       return;
     }
 
@@ -600,14 +600,14 @@ function runCalculation() {
       const result = calculateMonteCarloFixtureAware(teams, fixtures, simulationCount);
       renderRows(result.rows);
       renderPositionGrid(result.rows);
-      showInfo(`Monte Carlo mode sampled ${result.simulationCount.toLocaleString()} outcome scenarios.`);
+      showInfo(`Monte Carlo · ${result.simulationCount.toLocaleString()} samples.`);
       return;
     }
 
     const rows = calculateRanges(teams, fixtures);
     renderRows(rows);
     renderPositionGrid(rows);
-    showInfo("Fast range mode completed.");
+    showInfo("Fast range (point limits only).");
   } catch (error) {
     showError(error.message || "Failed to calculate.");
     resultsBody.innerHTML = "";
@@ -630,8 +630,14 @@ function initializeLiveDataControls() {
   seasonInput.value = String(getDefaultSeasonStartYear());
 }
 
+function syncMonteCarloRow() {
+  if (!monteCarloRow) return;
+  monteCarloRow.hidden = modeSelect.value !== "montecarlo";
+}
+
 calculateBtn.addEventListener("click", runCalculation);
 loadExampleBtn.addEventListener("click", loadExample);
+modeSelect.addEventListener("change", syncMonteCarloRow);
 fetchLiveBtn.addEventListener("click", async () => {
   try {
     await fetchPremierLeagueData();
@@ -644,19 +650,18 @@ fetchLiveBtn.addEventListener("click", async () => {
       /networkerror|failed to fetch/i.test(String(base));
     let suffix;
     if (base.includes("token")) {
-      suffix = " Use the API token field under Live Data above.";
+      suffix = " Add your token under Load data.";
     } else if (isFileOrigin && looksLikeBlockedFetch) {
-      suffix =
-        " Pages opened as file:// cannot call the API in most browsers. Run npm start in the project folder and open the Local address from that terminal (not a file path).";
+      suffix = " Open this app via npm start (http://localhost), not as a file.";
     } else if (looksLikeBlockedFetch && !isFileOrigin) {
-      suffix =
-        " Confirm the address bar shows the http://localhost URL from the terminal where npm start is running (not file:// or a different port). Try another browser, disable strict tracking/ad-block extensions for this site, and check you are online.";
+      suffix = " Check your connection, token, and ad-blockers; standings were not updated.";
     } else {
-      suffix = " Text areas and the table below were not updated.";
+      suffix = " Standings and fixtures were not updated.";
     }
     showError(base + suffix);
   }
 });
 
 initializeLiveDataControls();
+syncMonteCarloRow();
 loadExample();
