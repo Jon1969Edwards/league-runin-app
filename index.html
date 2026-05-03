@@ -35,7 +35,7 @@
         Token is stored locally in your browser only and sent to football-data.org as <code>X-Auth-Token</code>.
       </p>
       <p class="hint">
-        Live fetch needs this page served over <code>http://localhost</code> (not opened as a <code>file://</code> path). From the project folder run <code>npm start</code>, then open the <strong>Local</strong> URL it prints. If it says the port was changed because the default is in use, use that new port (do not guess an old bookmarked port).
+        Live fetch needs this page served over HTTP (not <code>file://</code>). Run <code>npm start</code> in the project folder and open the URL it prints; it includes a small proxy so the API works on ports like 58888 (football-data.org CORS only allows <code>http://localhost</code> without a port).
       </p>
       <label for="modeSelect">Calculation mode</label>
       <select id="modeSelect">

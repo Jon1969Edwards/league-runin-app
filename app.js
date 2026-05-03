@@ -13,8 +13,20 @@ const errorBox = document.getElementById("errorBox");
 const infoBox = document.getElementById("infoBox");
 const MAX_EXACT_FIXTURES = 14;
 const DEFAULT_MONTE_CARLO_SIMULATIONS = 20000;
-const API_BASE_URL = "https://api.football-data.org/v4";
+const REMOTE_FOOTBALL_DATA_API = "https://api.football-data.org/v4";
 const PREMIER_LEAGUE_CODE = "PL";
+
+/** football-data.org CORS allows only Origin http://localhost (no port); other ports need same-origin proxy. */
+function getFootballDataApiBase() {
+  if (typeof window === "undefined") return REMOTE_FOOTBALL_DATA_API;
+  const { hostname, port, origin } = window.location;
+  const loopback = hostname === "localhost" || hostname === "127.0.0.1";
+  if (!loopback) return REMOTE_FOOTBALL_DATA_API;
+  if (hostname === "localhost" && (port === "" || port === "80")) {
+    return REMOTE_FOOTBALL_DATA_API;
+  }
+  return `${origin}/api-football/v4`;
+}
 const API_TOKEN_STORAGE_KEY = "footballDataApiToken";
 
 const EXAMPLE_STANDINGS = `Arsenal,67,30,62
@@ -157,8 +169,9 @@ async function fetchPremierLeagueData() {
   fetchLiveBtn.textContent = "Fetching...";
 
   try {
-    const standingsUrl = `${API_BASE_URL}/competitions/${PREMIER_LEAGUE_CODE}/standings?season=${season}`;
-    const matchesUrl = `${API_BASE_URL}/competitions/${PREMIER_LEAGUE_CODE}/matches?season=${season}&status=SCHEDULED`;
+    const apiBase = getFootballDataApiBase();
+    const standingsUrl = `${apiBase}/competitions/${PREMIER_LEAGUE_CODE}/standings?season=${season}`;
+    const matchesUrl = `${apiBase}/competitions/${PREMIER_LEAGUE_CODE}/matches?season=${season}&status=SCHEDULED`;
 
     const standingsPayload = await fetchJson(standingsUrl, apiToken);
     const matchesPayload = await fetchJson(matchesUrl, apiToken);
