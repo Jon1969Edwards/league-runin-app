@@ -34,6 +34,9 @@
       <p class="hint">
         Token is stored locally in your browser only and sent to football-data.org as <code>X-Auth-Token</code>.
       </p>
+      <p class="hint">
+        Live fetch needs this page served over <code>http://localhost</code> (not opened as a <code>file://</code> path); otherwise the browser may show a network error. From the project folder run <code>npm start</code>, then open the URL it prints (for example <code>http://localhost:5173</code>).
+      </p>
       <label for="modeSelect">Calculation mode</label>
       <select id="modeSelect">
         <option value="range">Fast range (points bounds)</option>

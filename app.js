@@ -624,9 +624,18 @@ fetchLiveBtn.addEventListener("click", async () => {
     await fetchPremierLeagueData();
   } catch (error) {
     const base = error.message || "Failed to fetch live data.";
-    const suffix = base.includes("token")
-      ? " Use the API token field under Live Data above."
-      : " Text areas and the table below were not updated.";
+    const isFileOrigin = window.location.protocol === "file:";
+    const looksLikeBlockedFetch =
+      error.name === "TypeError" || /networkerror|failed to fetch/i.test(String(base));
+    let suffix;
+    if (base.includes("token")) {
+      suffix = " Use the API token field under Live Data above.";
+    } else if (isFileOrigin && looksLikeBlockedFetch) {
+      suffix =
+        " Pages opened as file:// cannot call the API in most browsers. Run npm start in the project folder and open the localhost URL instead.";
+    } else {
+      suffix = " Text areas and the table below were not updated.";
+    }
     showError(base + suffix);
   }
 });
